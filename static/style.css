@@ -1,16 +1,10 @@
-@page {
-    size: A4;
-}
+body { font: 2em Fontin, serif }
+nav { font-size: .7em }
 
-img {
-    size: 20cm 20cm;
-}
-
+@page { size: A5; margin: 1cm }
 @media print {
-    nav  {
-        display: none;
-    }
+    nav { display: none }
     img {
-        size: 200mm 200mm;
+        size: 20cm;
     }
 }

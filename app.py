@@ -3,10 +3,14 @@ import pickle
 
 import cv2
 from cv2 import aruco
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 
 from threading import Timer
+
+from sqlalchemy_utils.types.password import PasswordType, Password
+
+from sqlalchemy_utils import force_auto_coercion
 
 from flask_weasyprint import HTML, render_pdf
 
@@ -14,8 +18,14 @@ from flask_restful import Resource, Api
 
 from forms.marcador import MarcadorForm
 
+from forms.usuario import LoginForm
+
+from hashlib import md5
+
+force_auto_coercion()
+
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost/navicamera"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+pg8000://postgres:postgres@localhost/navicamera"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 N_MARKERS = 1000
@@ -34,6 +44,12 @@ class Marcador(db.Model):
     nome = db.Column(db.String(50))
     used = db.Column(db.Boolean)
 
+class Usuario(db.Model):
+    cod = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(50))
+    senha = db.Column(db.String(500))
+    admin = db.Column(db.Boolean)
+
 class ApiMarcadorAll(Resource):
     def get(self):
         marcadores = list()
@@ -43,7 +59,7 @@ class ApiMarcadorAll(Resource):
                 'nome': marcador.nome,
                 'descricao': marcador.descricao
             })
-            return marcadores
+        return marcadores
 
 def delete_image(cod):
     if os.path.isfile(os.path.join('static', 'markers', '{}.png'.format(cod))):
@@ -58,6 +74,22 @@ def populate_database():
             marcador = Marcador(cod=i, used=False)
             db.session.add(marcador)
         db.session.commit()
+    try:
+        os.mkdir(os.path.join('static', 'markers'))
+    except FileExistsError:
+        print('Encontrado diretório de marcadores ...')
+    if Usuario.query.filter(Usuario.admin == True).count() == 0:
+        root = Usuario()
+        root.admin = True
+        root.login = 'crislmfroes'
+        root.senha = md5('xenomorfo'.encode('utf-8')).hexdigest()
+        db.session.add(root)
+        db.session.commit()
+
+@app.before_request
+def filtra_login():
+    if session.get('logado') != True and request.endpoint != 'login':
+        return redirect(url_for('login'))
 
 @app.route('/')
 def listar():
@@ -80,8 +112,6 @@ def salvar():
         return redirect(url_for('listar'))
     return render_template('formulario.html', form=form, marcador=marcador)
 
-
-
 @app.route('/excluir')
 def excluir():
     cod = request.args.get('cod')
@@ -96,13 +126,34 @@ def excluir():
 def marcador():
     cod = request.args.get('cod')
     img_marcador = aruco.drawMarker(dictionary, int(cod) - 1, 1000)
-    cv2.imwrite(os.path.join('static', 'markers', '{}.png'.format(cod)), img_marcador)
+    cv2.imwrite(os.path.join('static', 'markers', '{}.jpg'.format(cod)), img_marcador)
     html = render_template('marcador.html', cod=int(cod))
     Timer(60, delete_image, (cod,)).start()
     return render_pdf(HTML(string=html))
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm(request.form)
+    if request.method == 'POST':
+        login = form.login.data
+        senha = md5(form.senha.data.encode('utf-8')).hexdigest()
+        usuario = Usuario.query.filter_by(login=login, senha=senha).first()
+        if usuario is not None:
+            session['login'] = usuario.login
+            session['admin'] = usuario.admin
+            session['logado'] = True
+            return redirect(url_for('listar'))
+        return redirect(url_for('login'))
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 def main():
     app.env = 'development'
+    app.secret_key = 'xenomorfo'
     app.run(debug=True)
 
 if __name__ == '__main__':
