@@ -1,0 +1,16 @@
+@page {
+    size: A4;
+}
+
+img {
+    size: 20cm 20cm;
+}
+
+@media print {
+    nav  {
+        display: none;
+    }
+    img {
+        size: 200mm 200mm;
+    }
+}

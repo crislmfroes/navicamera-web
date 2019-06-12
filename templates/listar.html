@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Listagem de Objetos{% endblock %}
+{% block content %}
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nome</th>
+            <th scope="col">Descrição</th>
+            <th scope="col">Opções</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for objeto in objetos %}
+        <tr>
+            <th>{{objeto.cod}}</th>
+            <td>{{objeto.nome}}</td>
+            <td><p>{{objeto.descricao}}</p></td>
+            <td>
+                <a href={{url_for('salvar', cod=objeto.cod)}} class="btn btn-primary">Alterar</a>
+                <a href={{url_for('excluir', cod=objeto.cod)}} class="btn btn-primary">Excluir</a>
+                <a href={{url_for('marcador', cod=objeto.cod)}} class="btn btn-primary">Marcador</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href={{url_for('salvar')}} class="btn btn-primary">Adicionar</a>
+{% endblock %}

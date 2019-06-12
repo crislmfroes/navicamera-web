@@ -1,0 +1,18 @@
+{% from '_formhelpers.html' import render_field %}
+{% extends 'base.html' %}
+{% block title %}Salvar Marcador{% endblock %}
+{% block content %}
+<form action={{url_for('salvar')}} method="post">
+    {% if marcador.nome %}
+    {{render_field(form.nome, class="form-control", value=marcador.nome)}}
+    {% else %}
+    {{render_field(form.nome, class="form-control")}}
+    {% endif %}
+    {% if marcador.descricao %}
+    {{render_field(form.descricao, class="form-control", value=marcador.descricao)}}
+    {% else %}
+    {{render_field(form.descricao, class="form-control")}}
+    {% endif %}
+    <button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+{% endblock %}
