@@ -1,13 +1,16 @@
 import os
 import pickle
-from plistlib import Data
 
 import cv2
 from cv2 import aruco
 from flask import Flask, redirect, render_template, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 
+from threading import Timer
+
 from flask_weasyprint import HTML, render_pdf
+
+from flask_restful import Resource, Api
 
 from forms.marcador import MarcadorForm
 
@@ -18,7 +21,12 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 N_MARKERS = 1000
 RANDOM_SEED = 123
 
+base_dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
+dictionary = aruco.custom_dictionary_from(1000, 5, base_dictionary, RANDOM_SEED)
+
 db = SQLAlchemy(app)
+
+api = Api(app)
 
 class Marcador(db.Model):
     cod = db.Column(db.Integer, primary_key=True)
@@ -26,8 +34,22 @@ class Marcador(db.Model):
     nome = db.Column(db.String(50))
     used = db.Column(db.Boolean)
 
-def get_next_id():
-    return None
+class ApiMarcadorAll(Resource):
+    def get(self):
+        marcadores = list()
+        for marcador in Marcador.query.filter(Marcador.used == True).all():
+            marcadores.append({
+                'cod': marcador.cod,
+                'nome': marcador.nome,
+                'descricao': marcador.descricao
+            })
+            return marcadores
+
+def delete_image(cod):
+    if os.path.isfile(os.path.join('static', 'markers', '{}.png'.format(cod))):
+        os.remove(os.path.join('static', 'markers', '{}.png'.format(cod)))
+
+api.add_resource(ApiMarcadorAll, '/api/marcadores')
 
 @app.before_first_request
 def populate_database():
@@ -73,11 +95,10 @@ def excluir():
 @app.route('/marcador')
 def marcador():
     cod = request.args.get('cod')
-    base_dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
-    dictionary = aruco.custom_dictionary_from(1000, 5, base_dictionary, RANDOM_SEED)
     img_marcador = aruco.drawMarker(dictionary, int(cod) - 1, 1000)
     cv2.imwrite(os.path.join('static', 'markers', '{}.png'.format(cod)), img_marcador)
     html = render_template('marcador.html', cod=int(cod))
+    Timer(60, delete_image, (cod,)).start()
     return render_pdf(HTML(string=html))
 
 def main():
