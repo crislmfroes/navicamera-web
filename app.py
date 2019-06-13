@@ -85,6 +85,13 @@ def populate_database():
         os.mkdir(os.path.join('static', 'markers'))
     except FileExistsError:
         print('Encontrado diretório de marcadores ...')
+    if Usuario.query.filter_by(admin=True).count() == 0:
+        root = Usuario()
+        root.admin = True
+        root.login = os.environ.get('ROOT_LOGIN')
+        root.senha = md5(os.environ.get('ROOT_PASSWORD').encode('utf-8')).hexdigest()
+        db.session.add(root)
+        db.session.commit()
 
 @app.before_request
 def filtra_login():
