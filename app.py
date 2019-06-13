@@ -37,6 +37,8 @@ RANDOM_SEED = 123
 base_dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
 dictionary = aruco.custom_dictionary_from(1000, 5, base_dictionary, RANDOM_SEED)
 
+app.secret_key = os.environ.get('SECRET_KEY')
+
 db = SQLAlchemy(app)
 
 api = Api(app)
@@ -176,7 +178,6 @@ def cadastro():
     return render_template('cadastro.html', form=form)
 
 def main():
-    app.secret_key = os.environ.get('SECRET_KEY')
     port = os.environ.get('PORT')
     if len(sys.argv) == 2:
         if sys.argv[1] == 'development':
