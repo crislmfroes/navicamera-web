@@ -177,15 +177,16 @@ def cadastro():
 
 def main():
     app.secret_key = os.environ.get('SECRET_KEY')
+    port = os.environ.get('PORT')
     if len(sys.argv) == 2:
         if sys.argv[1] == 'development':
             app.env = 'development'
-            app.run(debug=True)
+            app.run(debug=True, port=port)
         elif sys.argv[1] == 'production':
             app.env = 'production'
-            app.run(debug=False)
+            app.run(debug=False, port=port)
     app.env = 'production'
-    app.run(debug=False)
+    app.run(debug=False, port=port)
 
 if __name__ == '__main__':
     main()
