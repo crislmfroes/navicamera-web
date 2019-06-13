@@ -1,1 +1,14 @@
-<img src={{url_for('static', filename='markers/' + cod|string + '.jpg')}} alt="Marcador" width="100px">
+{% extends 'base.html' %}
+{% block title %}Marcador{% endblock %}
+{% block content %}
+<div class="marcador mt-5">
+    <img id="marker" src={{url_for('static', filename='markers/' + cod|string + '.png')}} class="img-fluid" width="50%">
+</div>
+<button id="btn-generate" class="btn btn-primary mt-5" onclick="generatePdf()">Baixar PDF</button>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"
+    integrity="sha384-NaWTHo/8YCBYJ59830LTz/P4aQZK1sS0SneOgAvhsIl3zBu8r9RevNg5lHCHAuQ/"
+    crossorigin="anonymous"></script>
+<script src={{url_for('static', filename='js/pdf.js')}}></script>
+{% endblock %}

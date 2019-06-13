@@ -1,11 +1,11 @@
 {% from '_formhelpers.html' import render_field %}
 {% extends 'base.html' %}
-{% block title %}Login{% endblock %}
+{% block title %}Cadastrar-se{% endblock %}
 {% block content %}
-<form action={{url_for('login')}} method="post">
+<form action={{url_for('cadastro')}} method="post">
     {{render_field(form.login, class="form-control")}}
     {{render_field(form.senha, class="form-control", type="password")}}
+    {{render_field(form.confirmaSenha, class="form-control", type="password")}}
     <button type="submit" class="btn btn-primary">Enviar</button>
-    <a class="btn btn-primary" href={{url_for('cadastro')}}>Cadastrar-se</a>
 </form>
 {% endblock %}

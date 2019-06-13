@@ -3,7 +3,7 @@ import pickle
 
 import cv2
 from cv2 import aruco
-from flask import Flask, redirect, render_template, request, url_for, session
+from flask import Flask, flash, redirect, render_template, request, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 
 from threading import Timer
@@ -18,14 +18,14 @@ from flask_restful import Resource, Api
 
 from forms.marcador import MarcadorForm
 
-from forms.usuario import LoginForm
+from forms.usuario import LoginForm, CadastroForm
 
 from hashlib import md5
 
 force_auto_coercion()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+pg8000://postgres:postgres@localhost/navicamera"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost/navicamera"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 N_MARKERS = 1000
@@ -78,17 +78,11 @@ def populate_database():
         os.mkdir(os.path.join('static', 'markers'))
     except FileExistsError:
         print('Encontrado diretório de marcadores ...')
-    if Usuario.query.filter(Usuario.admin == True).count() == 0:
-        root = Usuario()
-        root.admin = True
-        root.login = 'crislmfroes'
-        root.senha = md5('xenomorfo'.encode('utf-8')).hexdigest()
-        db.session.add(root)
-        db.session.commit()
 
 @app.before_request
 def filtra_login():
-    if session.get('logado') != True and request.endpoint != 'login':
+    if session.get('logado') != True and request.endpoint not in ['login', 'cadastro']:
+        flash("Você precisa fazer login para ter acesso a esta parte do site.")
         return redirect(url_for('login'))
 
 @app.route('/')
@@ -125,11 +119,11 @@ def excluir():
 @app.route('/marcador')
 def marcador():
     cod = request.args.get('cod')
-    img_marcador = aruco.drawMarker(dictionary, int(cod) - 1, 1000)
-    cv2.imwrite(os.path.join('static', 'markers', '{}.jpg'.format(cod)), img_marcador)
+    img_marcador = aruco.drawMarker(dictionary, int(cod) - 1, 600)
+    cv2.imwrite(os.path.join('static', 'markers', '{}.png'.format(cod)), img_marcador)
     html = render_template('marcador.html', cod=int(cod))
     Timer(60, delete_image, (cod,)).start()
-    return render_pdf(HTML(string=html))
+    return html
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -150,6 +144,20 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/cadastro', methods=['GET', 'POST'])
+def cadastro():
+    form = CadastroForm(request.form)
+    if request.method == 'POST':
+        usuario = Usuario()
+        usuario.login = form.login.data
+        usuario.senha = md5(form.senha.data.encode('utf-8')).hexdigest()
+        usuario.admin = False
+        db.session.add(usuario)
+        db.session.commit()
+        flash("Cadastro realizado com sucesso!")
+        return redirect(url_for('login'))
+    return render_template('cadastro.html', form=form)
 
 def main():
     app.env = 'development'

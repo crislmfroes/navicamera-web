@@ -17,13 +17,17 @@
             <td>{{objeto.nome}}</td>
             <td><p>{{objeto.descricao}}</p></td>
             <td>
+                {% if session.get('admin') == True %}
                 <a href={{url_for('salvar', cod=objeto.cod)}} class="btn btn-primary">Alterar</a>
                 <a href={{url_for('excluir', cod=objeto.cod)}} class="btn btn-primary">Excluir</a>
+                {% endif %}
                 <a href={{url_for('marcador', cod=objeto.cod)}} class="btn btn-primary">Marcador</a>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+{% if session.get('admin') == True %}
 <a href={{url_for('salvar')}} class="btn btn-primary">Adicionar</a>
+{% endif %}
 {% endblock %}
