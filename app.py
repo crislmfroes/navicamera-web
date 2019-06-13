@@ -1,5 +1,6 @@
 import os
 import pickle
+import sys
 
 import cv2
 from cv2 import aruco
@@ -25,7 +26,7 @@ from hashlib import md5
 force_auto_coercion()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+pg8000://postgres:postgres@localhost/navicamera"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://{}:{}@navicamera".format(os.environ.get('DB_USER'), os.environ.get('DB_PASSWORD'))
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 N_MARKERS = 1000
@@ -160,9 +161,16 @@ def cadastro():
     return render_template('cadastro.html', form=form)
 
 def main():
-    app.env = 'development'
-    app.secret_key = 'xenomorfo'
-    app.run(debug=True)
+    app.secret_key = os.environ.get('SECRET_KEY')
+    if len(sys.argv) == 2:
+        if sys.argv[1] == 'development':
+            app.env = 'development'
+            app.run(debug=True)
+        elif sys.argv[1] == 'production':
+            app.env = 'production'
+            app.run(debug=False)
+    app.env = 'production'
+    app.run(debug=False)
 
 if __name__ == '__main__':
     main()
