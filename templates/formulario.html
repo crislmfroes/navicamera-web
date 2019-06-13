@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% block title %}Salvar Marcador{% endblock %}
 {% block content %}
-<form action={{url_for('salvar')}} method="post">
+<form action={{url_for('salvar', cod=marcador.cod)}} method="post">
     {% if marcador.nome %}
     {{render_field(form.nome, class="form-control", value=marcador.nome)}}
     {% else %}

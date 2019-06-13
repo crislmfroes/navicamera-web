@@ -116,7 +116,7 @@ def salvar():
         marcador = Marcador.query.filter(Marcador.used == False).first()
     else:
         marcador = Marcador.query.filter(Marcador.cod == cod).first()
-    if request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         marcador.nome = form.nome.data
         marcador.descricao = form.descricao.data
         marcador.used = True
@@ -146,7 +146,7 @@ def marcador():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm(request.form)
-    if request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         login = form.login.data
         senha = md5(form.senha.data.encode('utf-8')).hexdigest()
         usuario = Usuario.query.filter_by(login=login, senha=senha).first()
@@ -166,15 +166,19 @@ def logout():
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     form = CadastroForm(request.form)
-    if request.method == 'POST':
+    if request.method == 'POST' and form.validate():
         usuario = Usuario()
         usuario.login = form.login.data
         usuario.senha = md5(form.senha.data.encode('utf-8')).hexdigest()
-        usuario.admin = False
-        db.session.add(usuario)
-        db.session.commit()
-        flash("Cadastro realizado com sucesso!")
-        return redirect(url_for('login'))
+        if Usuario.query.filter_by(login=usuario.login).count() == 0:
+            usuario.admin = False
+            db.session.add(usuario)
+            db.session.commit()
+            flash("Cadastro realizado com sucesso!")
+            return redirect(url_for('login'))
+        else:
+            flash("Usuário já existe!")
+            return redirect(url_for('cadastro'))
     return render_template('cadastro.html', form=form)
 
 def main():
