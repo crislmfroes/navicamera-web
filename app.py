@@ -25,7 +25,7 @@ from hashlib import md5
 force_auto_coercion()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost/navicamera"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+pg8000://postgres:postgres@localhost/navicamera"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 N_MARKERS = 1000
