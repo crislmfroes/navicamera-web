@@ -42,12 +42,14 @@ db = SQLAlchemy(app)
 api = Api(app)
 
 class Marcador(db.Model):
+    __tablename__ = "marcador"
     cod = db.Column(db.Integer, primary_key=True)
     descricao = db.Column(db.String(100))
     nome = db.Column(db.String(50))
     used = db.Column(db.Boolean)
 
 class Usuario(db.Model):
+    __tablename__ = "usuario"
     cod = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(50))
     senha = db.Column(db.String(500))
