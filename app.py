@@ -9,6 +9,8 @@ from flask_sqlalchemy import SQLAlchemy
 
 from threading import Timer
 
+from flask_heroku import Heroku
+
 from sqlalchemy_utils.types.password import PasswordType, Password
 
 from sqlalchemy_utils import force_auto_coercion
@@ -26,8 +28,8 @@ from hashlib import md5
 force_auto_coercion()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://{}:{}@navicamera".format(os.environ.get('DB_USER'), os.environ.get('DB_PASSWORD'))
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+heroku = Heroku(app)
 
 N_MARKERS = 1000
 RANDOM_SEED = 123
@@ -70,6 +72,10 @@ api.add_resource(ApiMarcadorAll, '/api/marcadores')
 
 @app.before_first_request
 def populate_database():
+    try:
+        db.create_all()
+    except BaseException as e:
+        print("Tabelas já inicializadas ...")
     if len(Marcador.query.all()) == 0:
         for i in range(1, N_MARKERS + 1):
             marcador = Marcador(cod=i, used=False)
