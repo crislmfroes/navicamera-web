@@ -1,31 +1,20 @@
 import os
 import pickle
 import sys
+from hashlib import md5
+from threading import Timer
 
 import cv2
 from cv2 import aruco
-from flask import Flask, flash, redirect, render_template, request, url_for, session
-from flask_sqlalchemy import SQLAlchemy
-
-from threading import Timer
-
+from flask import (Flask, flash, redirect, render_template, request, session,
+                   url_for)
 from flask_heroku import Heroku
-
-from sqlalchemy_utils.types.password import PasswordType, Password
-
-from sqlalchemy_utils import force_auto_coercion
-
-from flask_weasyprint import HTML, render_pdf
-
-from flask_restful import Resource, Api
+from flask_restful import Api, Resource
+from flask_sqlalchemy import SQLAlchemy
+from weasyprint import draw
 
 from forms.marcador import MarcadorForm
-
-from forms.usuario import LoginForm, CadastroForm
-
-from hashlib import md5
-
-force_auto_coercion()
+from forms.usuario import CadastroForm, LoginForm
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -36,6 +25,8 @@ RANDOM_SEED = 123
 
 base_dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
 dictionary = aruco.custom_dictionary_from(1000, 5, base_dictionary, RANDOM_SEED)
+
+board = aruco.CharucoBoard_create(3, 3, 6, 4, dictionary)
 
 app.secret_key = os.environ.get('SECRET_KEY')
 
@@ -141,6 +132,14 @@ def marcador():
     cv2.imwrite(os.path.join('static', 'markers', '{}.png'.format(cod)), img_marcador)
     html = render_template('marcador.html', cod=int(cod))
     Timer(60, delete_image, (cod,)).start()
+    return html
+
+@app.route('/calibrar')
+def calibrar():
+    img_board = board.draw(outSize=(600, 600))
+    cv2.imwrite(os.path.join('static', 'markers', 'board.png'), img_board)
+    html = render_template('marcador.html', cod="board")
+    Timer(60, delete_image, ("board",)).start()
     return html
 
 @app.route('/login', methods=['GET', 'POST'])
