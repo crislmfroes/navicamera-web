@@ -1,17 +1,17 @@
 import os
 import pickle
 import sys
+from genericpath import isfile
 from hashlib import md5
 from threading import Timer
 
 import cv2
 from cv2 import aruco
-from flask import (Flask, flash, redirect, render_template, request, session,
-                   url_for)
+from flask import (Flask, flash, jsonify, redirect, render_template, request,
+                   session, url_for)
+from flask.json import jsonify
 from flask_heroku import Heroku
-from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
-from weasyprint import draw
 
 from forms.marcador import MarcadorForm
 from forms.usuario import CadastroForm, LoginForm
@@ -23,16 +23,39 @@ heroku = Heroku(app)
 N_MARKERS = 1000
 RANDOM_SEED = 123
 
-base_dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
+'''base_dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
 dictionary = aruco.custom_dictionary_from(1000, 5, base_dictionary, RANDOM_SEED)
+store = dictionary.bytesList'''
 
-board = aruco.CharucoBoard_create(3, 3, 6, 4, dictionary)
+def get_dictionary():
+    path = os.path.join('assets', 'dictByteList.json')
+    try:
+        if not os.path.isfile(path):
+            raise FileNotFoundError()
+        storage = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
+        dictionary = aruco.custom_dictionary(1000, 5)
+        dictionary.markerSize = int(storage.getNode("markerSize").real())
+        dictionary.maxCorrectionBits = int(storage.getNode("maxCorrectionBits").real())
+        dictionary.bytesList = storage.getNode("bytesList").mat()
+        storage.release()
+    except FileNotFoundError as e:
+        storage = cv2.FileStorage(path, cv2.FILE_STORAGE_WRITE)
+        dictionary = aruco.custom_dictionary(1000, 5)
+        storage.write("markerSize", dictionary.markerSize)
+        storage.write("maxCorrectionBits", dictionary.maxCorrectionBits)
+        storage.write("bytesList", dictionary.bytesList)
+        storage.release()
+    return dictionary
+
+
+dictionary = get_dictionary()
+#dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
+
+board = aruco.CharucoBoard_create(10, 10, 0.2, 0.16, dictionary)
 
 app.secret_key = os.environ.get('SECRET_KEY')
 
 db = SQLAlchemy(app)
-
-api = Api(app)
 
 class Marcador(db.Model):
     __tablename__ = "marcador"
@@ -48,22 +71,23 @@ class Usuario(db.Model):
     senha = db.Column(db.String(500))
     admin = db.Column(db.Boolean)
 
-class ApiMarcadorAll(Resource):
-    def get(self):
-        marcadores = list()
-        for marcador in Marcador.query.filter(Marcador.used == True).all():
-            marcadores.append({
-                'cod': marcador.cod,
-                'nome': marcador.nome,
-                'descricao': marcador.descricao
-            })
-        return marcadores
+
+@app.route('/api/marcadores')
+def get_marcadores():
+    marcadores = list()
+    for marcador in Marcador.query.filter(Marcador.used == True).all():
+        marcadores.append({
+            'cod': marcador.cod,
+            'nome': marcador.nome,
+            'descricao': marcador.descricao
+        })
+    return jsonify(marcadores)
 
 def delete_image(cod):
     if os.path.isfile(os.path.join('static', 'markers', '{}.png'.format(cod))):
         os.remove(os.path.join('static', 'markers', '{}.png'.format(cod)))
 
-api.add_resource(ApiMarcadorAll, '/api/marcadores')
+#api.add_resource(ApiMarcadorAll, '/api/marcadores')
 
 @app.before_first_request
 def populate_database():
@@ -90,7 +114,7 @@ def populate_database():
 
 @app.before_request
 def filtra_login():
-    if session.get('logado') != True and request.endpoint not in ['login', 'cadastro']:
+    if session.get('logado') != True and request.endpoint not in ['login', 'cadastro', 'get_marcadores']:
         flash("Você precisa fazer login para ter acesso a esta parte do site.")
         return redirect(url_for('login'))
 
