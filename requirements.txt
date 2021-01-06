@@ -1,6 +1,6 @@
 aniso8601==7.0.0
 cairocffi==1.0.2
-CairoSVG==2.4.0
+CairoSVG==2.5.1
 cffi==1.12.3
 Click==7.0
 cssselect2==0.2.1
