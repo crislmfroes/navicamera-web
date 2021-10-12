@@ -17,7 +17,7 @@ itsdangerous==1.1.0
 Jinja2==2.10.1
 MarkupSafe==1.1.1
 numpy==1.16.4
-opencv-contrib-python-headless==4.1.0.25
+opencv-contrib-python-headless==4.1.1.26
 passlib==1.7.1
 pg8000==1.13.1
 Pillow==6.0.0
